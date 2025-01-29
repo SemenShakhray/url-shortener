@@ -25,17 +25,17 @@ func (h *Handler) Redirect(c *gin.Context) {
 	url, err := h.Serv.GetURL(ctx, alias)
 	if err != nil {
 		if errors.Is(err, storage.ErrURLNotFound) {
-			h.Log.Error("url not found", slog.String("alias", alias))
+			h.Log.Error("url not found", slog.String("alias", alias), slog.String("error", err.Error()))
 			c.JSON(http.StatusBadRequest, resp.Err("url not found"))
 			return
 		}
 
-		h.Log.Error("failed to get url", slog.String("alias", alias))
+		h.Log.Error("failed to get url", slog.String("alias", alias), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, resp.Err("internal error"))
 		return
 	}
 
-	h.Log.Info("got URL", slog.String("url", url))
+	h.Log.Debug("got URL", slog.String("url", url))
 
 	c.Redirect(http.StatusFound, url)
 }

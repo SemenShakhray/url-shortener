@@ -159,7 +159,6 @@ func TestRedirect(t *testing.T) {
 				mockService.EXPECT().GetURL(gomock.Any(), tc.alias).Return("", tc.mockError)
 			}
 
-			// Создание тестового HTTP-сервера
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
@@ -177,6 +176,73 @@ func TestRedirect(t *testing.T) {
 				require.NoError(t, err)
 				assert.Contains(t, string(body), tc.respError)
 			}
+		})
+	}
+}
+
+func TestDelete(t *testing.T) {
+	cases := []struct {
+		name       string
+		alias      string
+		mockError  error
+		statusCode int
+		respError  string
+	}{
+		{
+			name:       "Success",
+			alias:      "example",
+			statusCode: http.StatusOK,
+			respError:  "",
+		},
+		{
+			name:       "Empty alias",
+			alias:      "",
+			statusCode: http.StatusBadRequest,
+			respError:  "alias cannot be empty",
+		},
+		{
+			name:       "Internal server error",
+			alias:      "error",
+			mockError:  errors.New("failed delete url"),
+			statusCode: http.StatusInternalServerError,
+			respError:  "failed delete url",
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	log := slogdiscard.NewDiscardLogger()
+	service := mock_service.NewMockServicer(ctrl)
+	handler := handlers.NewHandler(log, service)
+	r := router.NewRouter(handler)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			if tc.alias == "" {
+				service.EXPECT().
+					DeleteURL(gomock.Any(), tc.alias).Times(0)
+			} else if tc.mockError == nil {
+				service.EXPECT().
+					DeleteURL(gomock.Any(), tc.alias).Return(nil)
+			} else {
+				service.EXPECT().
+					DeleteURL(gomock.Any(), tc.alias).Return(tc.mockError)
+			}
+
+			w := httptest.NewRecorder()
+			req, err := http.NewRequest(http.MethodDelete, "/url/"+tc.alias, nil)
+			require.NoError(t, err)
+			r.ServeHTTP(w, req)
+
+			var resp handlers.Response
+
+			body := w.Body.String()
+			require.NoError(t, json.Unmarshal([]byte(body), &resp))
+			require.Equal(t, tc.respError, resp.Error)
+			require.Equal(t, tc.statusCode, w.Code)
+
 		})
 	}
 }
