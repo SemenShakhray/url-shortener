@@ -17,7 +17,6 @@ func NewRandomString(aliasLength int) (string, error) {
 			return "", err
 		}
 		alias[i] = latters[n.Int64()]
-
 	}
 
 	return string(alias), nil

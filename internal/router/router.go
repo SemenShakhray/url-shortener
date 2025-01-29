@@ -1,15 +1,22 @@
 package router
 
 import (
-	"github.com/SemenShakhray/url-shortener/internal/handlers"
+	"net/http"
 
+	"github.com/SemenShakhray/url-shortener/internal/handlers"
 	"github.com/gin-gonic/gin"
 )
 
 func NewRouter(h handlers.Handler) *gin.Engine {
-	c := gin.Default()
+	c := gin.New()
+
+	c.Use(gin.Recovery())
 
 	c.POST("/url", h.SaveURL)
+	c.GET("/url/", func(c *gin.Context) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "alias cannot be empty"})
+	})
+	c.GET("/url/:alias", h.Redirect)
 
 	return c
 }

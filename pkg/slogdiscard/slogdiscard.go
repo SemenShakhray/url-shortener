@@ -5,32 +5,32 @@ import (
 	"log/slog"
 )
 
-type DiscardHandler struct{}
-
 func NewDiscardLogger() *slog.Logger {
-	return slog.New(NewDiscardHandler)
+	return slog.New(NewDiscardHandler())
 }
+
+type DiscardHandler struct{}
 
 func NewDiscardHandler() *DiscardHandler {
 	return &DiscardHandler{}
 }
 
 func (h *DiscardHandler) Handle(_ context.Context, _ slog.Record) error {
-	//ignore the log entry
+	// Просто игнорируем запись журнала
 	return nil
 }
 
-func (h *DiscardHandler) Enabled(_ context.Context, _ slog.Level) bool {
-	//returns false because the log entry is ignored
-	return false
-}
-
 func (h *DiscardHandler) WithAttrs(_ []slog.Attr) slog.Handler {
-	//returns the same handler, since there are no attributes to save.
+	// Возвращает тот же обработчик, так как нет атрибутов для сохранения
 	return h
 }
 
 func (h *DiscardHandler) WithGroup(_ string) slog.Handler {
-	//returns the same handler, since there is no group to save.
+	// Возвращает тот же обработчик, так как нет группы для сохранения
 	return h
+}
+
+func (h *DiscardHandler) Enabled(_ context.Context, _ slog.Level) bool {
+	// Всегда возвращает false, так как запись журнала игнорируется
+	return false
 }
