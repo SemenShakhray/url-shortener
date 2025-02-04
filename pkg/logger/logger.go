@@ -21,7 +21,7 @@ func SetupLogger(env string) Logger {
 	switch env {
 	case envLocal:
 		log = slog.New(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 		)
 	case envDev:
 		log = slog.New(
@@ -31,22 +31,30 @@ func SetupLogger(env string) Logger {
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
+	default:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
 	}
 	return Logger{Log: log}
 }
 
 func (l *Logger) Debug(msg string, args ...any) {
-	slog.Debug(msg, args...)
+	l.Log.Debug(msg, args...)
 }
 
 func (l *Logger) Info(msg string, args ...any) {
-	slog.Info(msg, args...)
+	l.Log.Info(msg, args...)
 }
 
 func (l *Logger) Warn(msg string, args ...any) {
-	slog.Warn(msg, args...)
+	l.Log.Warn(msg, args...)
 }
 
 func (l *Logger) Error(msg string, args ...any) {
-	slog.Error(msg, args...)
+	l.Log.Error(msg, args...)
+}
+
+func (l *Logger) With(args ...any) *Logger {
+	return &Logger{Log: l.Log.With(args...)}
 }

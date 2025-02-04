@@ -13,7 +13,7 @@ func (h *Handler) DeleteURL(c *gin.Context) {
 
 	op := "handlers.DeleteURL"
 
-	h.Log.Log.With(
+	log := h.Log.With(
 		slog.String("op", op),
 	)
 
@@ -21,7 +21,7 @@ func (h *Handler) DeleteURL(c *gin.Context) {
 
 	err := h.Serv.DeleteURL(c.Request.Context(), alias)
 	if err != nil {
-		h.Log.Error("failed to delete url", slog.String("alias", alias), slog.String("error", err.Error()))
+		log.Error("failed to delete url", slog.String("alias", alias), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, resp.Err("failed delete url"))
 		return
 	}

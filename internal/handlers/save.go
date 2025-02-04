@@ -24,7 +24,7 @@ func (h *Handler) SaveURL(c *gin.Context) {
 
 	resp := Response{}
 
-	h.Log.Log.With(
+	log := h.Log.With(
 		slog.String("op", op),
 	)
 
@@ -33,24 +33,27 @@ func (h *Handler) SaveURL(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			h.Log.Error("request body is empty")
+			log.Error("request body is empty")
 			c.JSON(http.StatusBadRequest, resp.Err("empty request"))
+
 			return
 		}
 
-		h.Log.Error("failed to decode request body", slog.String("error", err.Error()))
+		log.Error("failed to decode request body", slog.String("error", err.Error()))
 		c.JSON(http.StatusBadRequest, resp.Err("failed to decode request body"))
+
 		return
 	}
-	h.Log.Info("request body decoded", slog.Any("request", req))
+	log.Info("request body decoded", slog.Any("request", req))
 
 	err = validator.New().Struct(req)
 	if err != nil {
 		validateErr := err.(validator.ValidationErrors)
 
-		h.Log.Error("invalid request", slog.String("error", err.Error()))
+		log.Error("invalid request", slog.String("error", err.Error()))
 
 		c.JSON(http.StatusBadRequest, response.ValidationError(validateErr, resp.Response))
+
 		return
 	}
 
@@ -58,9 +61,10 @@ func (h *Handler) SaveURL(c *gin.Context) {
 	if alias == "" {
 		alias, err = random.NewRandomString(aliasLength)
 		if err != nil {
-			h.Log.Error("failed create alias", slog.String("error", err.Error()))
+			log.Error("failed create alias", slog.String("error", err.Error()))
 
 			c.JSON(http.StatusInternalServerError, resp.Err("failed create alias"))
+
 			return
 		}
 	}
@@ -70,18 +74,19 @@ func (h *Handler) SaveURL(c *gin.Context) {
 	err = h.Serv.SaveURL(ctx, req.URL, alias)
 	if err != nil {
 		if errors.Is(err, storage.ErrURLOrAliasExists) {
-			h.Log.Info("url or alias already exists", slog.String("url", req.URL), slog.String("alias", alias))
+			log.Info("url or alias already exists", slog.String("url", req.URL), slog.String("alias", alias))
 
 			c.JSON(http.StatusBadRequest, resp.Err("url or alias already exists"))
+
 			return
 		}
-		h.Log.Error("failed add url", slog.String("error", err.Error()))
+		log.Error("failed add url", slog.String("error", err.Error()))
 
 		c.JSON(http.StatusInternalServerError, resp.Err(err.Error()))
+
 		return
 	}
-
-	h.Log.Info("url added", slog.String("url", req.URL), slog.String("alias", alias))
+	log.Info("url added", slog.String("url", req.URL), slog.String("alias", alias))
 
 	c.JSON(http.StatusOK, Response{
 		Response: resp.OK(),

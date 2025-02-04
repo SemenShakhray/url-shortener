@@ -46,7 +46,7 @@ func main() {
 	handler := handlers.NewHandler(log.Log, service)
 
 	//TODO init router: gin
-	r := router.NewRouter(handler)
+	r := router.NewRouter(handler, config)
 
 	//TODO run server
 	log.Info("starting server", slog.String("host", config.Server.Host), slog.String("port", config.Server.Port))

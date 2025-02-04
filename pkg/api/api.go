@@ -23,7 +23,7 @@ func GetRedirect(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	// defer resp.Body.Close()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusFound {
 		return resp, fmt.Errorf("%s: %w: %d", op, ErrInvalidStatusCode, resp.StatusCode)

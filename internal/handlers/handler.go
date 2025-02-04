@@ -9,7 +9,7 @@ import (
 )
 
 type Handler struct {
-	Log  logger.Logger
+	Log  *logger.Logger
 	Serv service.Servicer
 }
 
@@ -26,7 +26,7 @@ type Response struct {
 func NewHandler(log *slog.Logger, serv service.Servicer) Handler {
 	return Handler{
 		Serv: serv,
-		Log: logger.Logger{
+		Log: &logger.Logger{
 			Log: log,
 		},
 	}

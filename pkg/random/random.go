@@ -2,6 +2,7 @@ package random
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 )
 
@@ -14,7 +15,7 @@ func NewRandomString(aliasLength int) (string, error) {
 	for i := range alias {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(latters))))
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed generate random int: %w", err)
 		}
 		alias[i] = latters[n.Int64()]
 	}

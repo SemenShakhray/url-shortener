@@ -28,6 +28,8 @@ type Server struct {
 	Port        string
 	Timeout     time.Duration
 	IdleTimeout time.Duration
+	User        string
+	Password    string
 }
 
 type Migration struct {
@@ -54,8 +56,10 @@ func MustLoad() Config {
 		},
 
 		Server: Server{
-			Host: env.Get("SERVER_HOST"),
-			Port: env.Get("SERVER_PORT"),
+			Host:     env.Get("SERVER_HOST"),
+			Port:     env.Get("SERVER_PORT"),
+			User:     env.Get("SERVER_USER"),
+			Password: env.Get("SERVER_PASSWORD"),
 		},
 		Migration: Migration{
 			Dir:  env.Get("MIGRATION_DIR"),

@@ -2,7 +2,6 @@ package handlers_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/SemenShakhray/url-shortener/internal/config"
 	"github.com/SemenShakhray/url-shortener/internal/handlers"
 	"github.com/SemenShakhray/url-shortener/internal/handlers/mock_service"
 	"github.com/SemenShakhray/url-shortener/internal/router"
@@ -30,18 +30,24 @@ func TestSaveURL(t *testing.T) {
 		expectedCode int
 		respError    string
 		mockError    string
+		user         string
+		password     string
 	}{
 		{
 			name:         "Success",
 			alias:        "alias",
 			url:          "https://example.com",
 			expectedCode: http.StatusOK,
+			user:         "123",
+			password:     "123",
 		},
 		{
 			name:         "Empty alias",
 			alias:        "",
 			url:          "https://example.com",
 			expectedCode: http.StatusOK,
+			user:         "123",
+			password:     "123",
 		},
 		{
 			name:         "Empty URL",
@@ -49,6 +55,8 @@ func TestSaveURL(t *testing.T) {
 			url:          "",
 			expectedCode: http.StatusBadRequest,
 			respError:    "field URL is required field",
+			user:         "123",
+			password:     "123",
 		},
 		{
 			name:         "Service error",
@@ -57,18 +65,23 @@ func TestSaveURL(t *testing.T) {
 			expectedCode: http.StatusInternalServerError,
 			respError:    "internal error",
 			mockError:    "internal error",
+			user:         "123",
+			password:     "123",
 		},
 	}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ctx := context.Background()
-
+	cfg := config.Config{
+		Server: config.Server{
+			User:     "123",
+			Password: "123",
+		},
+	}
 	log := slogdiscard.NewDiscardLogger()
 	mockService := mock_service.NewMockServicer(ctrl)
-
 	handler := handlers.NewHandler(log, mockService)
-	r := router.NewRouter(handler)
+	r := router.NewRouter(handler, cfg)
 
 	for _, tc := range cases {
 
@@ -76,18 +89,19 @@ func TestSaveURL(t *testing.T) {
 
 			if tc.respError == "" {
 				mockService.EXPECT().
-					SaveURL(ctx, gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil)
 			}
 			if tc.mockError != "" {
 				mockService.EXPECT().
-					SaveURL(ctx, gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New(tc.mockError))
 			}
 			input := fmt.Sprintf(`{"url": "%s", "alias": "%s"}`, tc.url, tc.alias)
 
 			w := httptest.NewRecorder()
 			req, err := http.NewRequest(http.MethodPost, "/url", bytes.NewReader([]byte(input)))
+			req.SetBasicAuth(tc.user, tc.password)
 			require.NoError(t, err)
 
 			r.ServeHTTP(w, req)
@@ -143,10 +157,16 @@ func TestRedirect(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	cfg := config.Config{
+		Server: config.Server{
+			User:     "123",
+			Password: "123",
+		},
+	}
 	log := slogdiscard.NewDiscardLogger()
 	mockService := mock_service.NewMockServicer(ctrl)
 	handler := handlers.NewHandler(log, mockService)
-	r := router.NewRouter(handler)
+	r := router.NewRouter(handler, cfg)
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -187,18 +207,24 @@ func TestDelete(t *testing.T) {
 		mockError  error
 		statusCode int
 		respError  string
+		user       string
+		password   string
 	}{
 		{
 			name:       "Success",
 			alias:      "example",
 			statusCode: http.StatusOK,
 			respError:  "",
+			user:       "123",
+			password:   "123",
 		},
 		{
 			name:       "Empty alias",
 			alias:      "",
 			statusCode: http.StatusBadRequest,
 			respError:  "alias cannot be empty",
+			user:       "123",
+			password:   "123",
 		},
 		{
 			name:       "Internal server error",
@@ -206,16 +232,24 @@ func TestDelete(t *testing.T) {
 			mockError:  errors.New("failed delete url"),
 			statusCode: http.StatusInternalServerError,
 			respError:  "failed delete url",
+			user:       "123",
+			password:   "123",
 		},
 	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	cfg := config.Config{
+		Server: config.Server{
+			User:     "123",
+			Password: "123",
+		},
+	}
 	log := slogdiscard.NewDiscardLogger()
 	service := mock_service.NewMockServicer(ctrl)
 	handler := handlers.NewHandler(log, service)
-	r := router.NewRouter(handler)
+	r := router.NewRouter(handler, cfg)
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -233,6 +267,7 @@ func TestDelete(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			req, err := http.NewRequest(http.MethodDelete, "/url/"+tc.alias, nil)
+			req.SetBasicAuth(tc.user, tc.password)
 			require.NoError(t, err)
 			r.ServeHTTP(w, req)
 

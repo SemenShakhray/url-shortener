@@ -3,21 +3,25 @@ package router
 import (
 	"net/http"
 
+	"github.com/SemenShakhray/url-shortener/internal/config"
 	"github.com/SemenShakhray/url-shortener/internal/handlers"
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h handlers.Handler) *gin.Engine {
-	c := gin.New()
+func NewRouter(h handlers.Handler, cfg config.Config) *gin.Engine {
+	r := gin.Default()
 
-	c.Use(gin.Recovery())
-
-	c.POST("/url", h.SaveURL)
-	c.Any("/url/", func(c *gin.Context) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "alias cannot be empty"})
+	r.GET("/url/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "alias cannot be empty"})
 	})
-	c.GET("/url/:alias", h.Redirect)
-	c.DELETE("/url/:alias", h.DeleteURL)
+	r.GET("url/:alias", h.Redirect)
 
-	return c
+	rAuth := r.Group("/url", gin.BasicAuth(gin.Accounts{cfg.Server.User: cfg.Server.Password}))
+	rAuth.POST("", h.SaveURL)
+	rAuth.DELETE("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "alias cannot be empty"})
+	})
+	rAuth.DELETE("/:alias", h.DeleteURL)
+
+	return r
 }
