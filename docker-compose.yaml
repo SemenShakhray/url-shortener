@@ -1,8 +1,19 @@
 services:
+  shortener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortener
+    ports:
+      - "8080:${SERVER_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - appnet
+
   postgres:
     image: postgres:latest
-    env_file:
-      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
@@ -11,6 +22,17 @@ services:
       - "5432:${DB_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
- 
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
+      interval: 3s
+      timeout: 5s
+      retries: 1
+    networks:
+      - appnet
+
 volumes:
   postgres_data:
+
+networks:
+  appnet:
+    driver: bridge
