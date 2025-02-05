@@ -1,11 +1,8 @@
 name: Build and Deploy Docker App
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to deploy'
-        required: true
+  push:
+    branches: ["main"]
 
 jobs:
   deploy:
@@ -17,10 +14,14 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag }} 
 
-      - name: Build Docker image
+      - name: Install Docker Compose
         run: |
-          docker build -t url-shortener .
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+          sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
 
-      - name: Run Docker container
+      - name: Build and run with Docker Compose
         run: |
-          docker run -d -p 8082:8082 --name url-shortener url-shortener
+          docker-compose down 
+          docker-compose up -d
