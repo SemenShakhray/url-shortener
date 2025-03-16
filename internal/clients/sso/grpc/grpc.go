@@ -44,7 +44,8 @@ func New(
 		grpc.WithChainUnaryInterceptor(
 			logging.UnaryClientInterceptor(InterceptorLogger(log), logOpts...),
 			retry.UnaryClientInterceptor(retryOpts...),
-		))
+		),
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -53,6 +54,19 @@ func New(
 	return &Client{
 		api: protos.NewAuthClient(cc),
 	}, nil
+}
+
+func (c *Client) IsAdmin(ctx context.Context, userID int64) (bool, error) {
+	const op = "grpc.IsAdmin"
+
+	resp, err := c.api.IsAdmin(ctx, &protos.IsAdminRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return resp.IsAdmin, nil
 }
 
 func InterceptorLogger(l *slog.Logger) logging.Logger {

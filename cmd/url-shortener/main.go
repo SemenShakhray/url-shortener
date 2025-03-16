@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	ssogrpc "github.com/SemenShakhray/url-shortener/internal/clients/sso/grpc"
 	"github.com/SemenShakhray/url-shortener/internal/config"
 	"github.com/SemenShakhray/url-shortener/internal/handlers"
 	"github.com/SemenShakhray/url-shortener/internal/router"
@@ -29,6 +30,20 @@ func main() {
 	log.Info("starting url shortener", slog.String("env", config.Env))
 	log.Debug("debug massages are enabled")
 
+	ssoClient, err := ssogrpc.New(
+		context.Background(),
+		log.Log,
+		config.Clients.SSO.Address,
+		config.Clients.SSO.Timeout,
+		config.Clients.SSO.RetriesCount,
+	)
+	if err != nil {
+		log.Error("failed to init sso client",
+			slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	ssoClient.IsAdmin(context.Background(), 1)
 	//TODO init storage: postgres
 	db, err := postgres.Connect(config)
 	if err != nil {

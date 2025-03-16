@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/goloop/env"
@@ -13,6 +14,8 @@ type Config struct {
 	DB        DB
 	Server    Server
 	Migration Migration
+	Clients   ClientsConfig
+	AppSecret string
 }
 
 type DB struct {
@@ -30,6 +33,16 @@ type Server struct {
 	IdleTimeout time.Duration
 	User        string
 	Password    string
+}
+
+type Client struct {
+	Address      string
+	Timeout      time.Duration
+	RetriesCount int
+}
+
+type ClientsConfig struct {
+	SSO Client
 }
 
 type Migration struct {
@@ -66,20 +79,38 @@ func MustLoad() Config {
 			DSN:  env.Get("MIGRATION_DSN"),
 			Name: env.Get("MIGRATION_NAME"),
 		},
+		Clients: ClientsConfig{
+			SSO: Client{
+				Address: env.Get("CLIENT_ADDRESS"),
+			},
+		},
+		AppSecret: env.Get("APP_SECRET"),
 	}
 
-	timeout, err := time.ParseDuration(os.Getenv("SERVER_TIMEOUT"))
+	timeoutServer, err := time.ParseDuration(os.Getenv("SERVER_TIMEOUT"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	idleTimeout, err := time.ParseDuration(os.Getenv("IDLE_TIMEOUT"))
+	idleTimeoutServer, err := time.ParseDuration(os.Getenv("IDLE_TIMEOUT"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	cfg.Server.Timeout = timeout
-	cfg.Server.IdleTimeout = idleTimeout
+	cfg.Server.Timeout = timeoutServer
+	cfg.Server.IdleTimeout = idleTimeoutServer
+
+	timeoutClient, err := time.ParseDuration(os.Getenv("SERVER_TIMEOUT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	retriesCount, err := strconv.Atoi(env.Get("CLIENT_RETRIES_COUNT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cfg.Clients.SSO.Timeout = timeoutClient
+	cfg.Clients.SSO.RetriesCount = retriesCount
 
 	return cfg
 }
